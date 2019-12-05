@@ -1,8 +1,7 @@
 #include <iostream>
 using namespace std;
-//e307 a523 a587 c259
-char data[100000000];
 
+char data[100000000];
 int main(int argc, char const *argv[]){
 	ios_base::sync_with_stdio(false);
 	cin.tie(0);
