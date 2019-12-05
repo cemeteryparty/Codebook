@@ -24,11 +24,11 @@ int main(int argc, char const *argv[]){
         UNION(a,b);
     }
 	for(int i = 0;i < q;i++){
-		scanf("%d%d",&a,&b);
+	    scanf("%d%d",&a,&b);
         if(FindGroup(a) != FindGroup(b))
             printf("Different group\n");
         else
-			printf("Same group\n");
+	    printf("Same group\n");
     }
     return 0;
 }
