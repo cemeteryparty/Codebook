@@ -31,11 +31,17 @@ int main(int argc,char const *argv[]){
 	for(int i = 0;i < n;i++)
 		dis[i] = INF;
 	dis[begin] = 0;
-	for(int t = 0;t < n - 1;t++)
+	for(int t = 0;t < n - 1;t++){
+		bool conti = false;
 		for(int i = 0;i < n;i++)
-			for(int vi = 0;vi < adj_list[i].size();vi++)
-				if(dis[i] + adj_list[i][vi].cost < dis[adj_list[i][vi].end] && dis[i] != INF)
+			for(int vi = 0;vi < adj_list[i].size() && dis[i] != INF;vi++)
+				if(dis[i] + adj_list[i][vi].cost < dis[adj_list[i][vi].end]){
 					dis[adj_list[i][vi].end] = dis[i] + adj_list[i][vi].cost;
+					conti = true;
+				}
+		if(!conti)
+			break;
+	}
 	for(int i = 0;i < n;i++){
 		if(dis[i] == INF)
 			printf("No path from %d to %d\n",begin,i);
