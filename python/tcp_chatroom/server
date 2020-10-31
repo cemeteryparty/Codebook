@@ -1,0 +1,89 @@
+#!/usr/bin/python3
+
+from socket import *
+import threading, sys
+
+class ServerService(object):
+	def __init__(self, ):
+		self.Session = {} # sessionID: sockfd
+		self.ClientList = []
+	def CreateSockfd(self, ListenIP, ListenPort):
+		try:
+			# create TCP master socket
+			self.TCPsockfd = socket(AF_INET, SOCK_STREAM)
+			self.TCPsockfd.bind((ListenIP, ListenPort))
+		except Exception as err:
+			print(f"[x] E: {err}")
+			exit(-1)
+		print(f"[*] Server listening on {ListenIP}:{ListenPort}")
+	def Listen(self):
+		sessionID = 1
+		try:
+			self.TCPsockfd.listen(10) # listen queue max 10
+			while True:
+				try:
+					clientfd, cliaddr = self.TCPsockfd.accept() # tcp slave socket
+					self.Session[sessionID] = clientfd
+					
+					SlaveThread = threading.Thread(target = self.HandleTCPslave,args = (sessionID, cliaddr))
+					self.ClientList.append(SlaveThread)
+					SlaveThread.start()
+
+					sessionID += 1 # next new connection
+				except KeyboardInterrupt:
+					print("\n[-] Server close...")
+					break
+		except Exception as err:
+			print(f"[x] E: {err}")
+			exit(-1)
+	def HandleTCPslave(self, sessionID, saddr):
+		print(f"[+] New Connection ({sessionID}) from {saddr[0]}:{saddr[1]}")
+		self.Broadcast(f"[ User ({saddr[0]}:{saddr[1]}) join ]", 0)
+		while True:
+			climsg = self.Session[sessionID].recv(1024).decode()
+			if len(climsg):
+				print(f" Received {len(climsg)} bytes from {saddr[0]}:{saddr[1]}, {climsg}")
+				if climsg == "exit":
+					break
+				climsg = f"({saddr[0]}:{saddr[1]}): {climsg}"
+				self.Broadcast(climsg, sessionID)
+			else:
+				break
+		# Client Exit Event
+		print(f"[-] Connection ({saddr[0]}:{saddr[1]}) close...")
+		self.Broadcast(f"[ User ({saddr[0]}:{saddr[1]}) leave ]", 0)
+		self.Session[sessionID].close()
+		del self.Session[sessionID]
+	def Broadcast(self, message, senderID):
+		DeathSession = []
+		for sessionID in self.Session.keys():
+			if sessionID != senderID:
+				try:
+					self.Session[sessionID].send(message.encode())
+				except Exception as err:
+					print(f"[x] E: {err}")
+					self.Session[sessionID].close()
+					DeathSession.append(sessionID)
+		for DeathSID in DeathSession:
+			del Session[DeathSID]
+	def Close(self):
+		for cthread in self.ClientList:
+			cthread.join()
+		self.TCPsockfd.close()
+def main():
+	if len(sys.argv) != 3:
+		print(f"Usage:\n {sys.argv[0]} <Listen IP> <Listen Port>")
+		exit(-1)
+	try:
+		ListenIP, ListenPort = sys.argv[1], int(sys.argv[2])
+	except ValueError:
+		print(f"E: <Listen Port> {ListenPort} is invalid")
+		exit(-1)
+	ServSer = ServerService()
+	ServSer.CreateSockfd(ListenIP, ListenPort) # create TCP master socket
+	
+	ServSer.Listen()
+
+	ServSer.Close()
+if __name__ == "__main__":
+	main()

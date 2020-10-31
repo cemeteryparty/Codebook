@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+
+from socket import *
+import sys
+
+class ClientService(object):
+	def __init__(self, ServerIP, ServerPort):
+		self.ServerIP = ServerIP
+		self.ServerPort = ServerPort
+	def CreateSockfd(self):
+		try:
+			# create TCP socket
+			sockfd_t = socket(AF_INET, SOCK_STREAM)
+			sockfd_t.connect((self.ServerIP, self.ServerPort))
+			return sockfd_t
+		except:
+			print(f"[x] Failed to connect to {self.ServerIP}:{self.ServerPort}")
+			exit(-1)
+	def TCPsender(self, TCPsockfd, climsg):
+		TCPsockfd.send(climsg.encode())
+		servmsg = TCPsockfd.recv(1024).decode()
+		return servmsg
+
+def main():
+	if len(sys.argv) != 3:
+		print("\tInvalid parameters!!!")
+		print(f"\tUsage {sys.argv[0]} <Server IP> <Server Port>")
+		exit(-1)
+	CliSer = ClientService(sys.argv[1], int(sys.argv[2]))
+	TCPsockfd = CliSer.CreateSockfd() # create TCP socket, UDP socket
+
+	try:
+		while True:
+			climsg = input("% ")
+			servmsg = CliSer.TCPsender(TCPsockfd, climsg)
+			if climsg == "exit":
+				break
+			print(servmsg)
+	except KeyboardInterrupt:
+		CliSer.TCPsender(TCPsockfd, "exit")
+	
+	TCPsockfd.close()
+if __name__ == "__main__":
+	main()

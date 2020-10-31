@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+
+from socket import *
+import threading, sys
+
+class ServerService(object):
+	def __init__(self, HOSTNAME, ListenPort):
+		self.HOSTNAME = HOSTNAME
+		self.ListenPort = ListenPort
+	def CreateSockfd(self):
+		# create TCP master socket
+		msockfd_t = socket(AF_INET, SOCK_STREAM)
+		msockfd_t.bind((self.HOSTNAME, self.ListenPort))
+		msockfd_t.listen(10) # listen queue max 10
+		print(f"[*] Server listening on {self.HOSTNAME}:{self.ListenPort}")
+		return msockfd_t
+	def HandleTCPslave(self, sockfd, saddr):
+		while True:
+			climsg = sockfd.recv(1024).decode()
+			print(f"[*] Received {len(climsg)} bytes from {saddr[0]}:{saddr[1]}, {climsg}")
+			sockfd.send(climsg.encode())
+			if climsg == "exit":
+				break
+		sockfd.close() # Client Exit Event
+
+def main():
+	if len(sys.argv) != 2:
+		print("\tInvalid parameters!!!")
+		print(f"\tUsage {sys.argv[0]} <Listen Port>")
+		exit(-1)
+	try:
+		HOSTNAME, ListenPort = "", int(sys.argv[1])
+	except ValueError:
+		print("\tInvalid parameters!!!\n\t<Listen Port> isn't valid")
+		exit(-1)
+	ServSer = ServerService(HOSTNAME, ListenPort)
+	
+	TCPsockfd = ServSer.CreateSockfd() # create TCP master socket, UDP socket
+	SlaveThreads = []
+	try:	
+		while True:
+			clientfd, cliaddr = TCPsockfd.accept() # tcp slave socket
+			# Keep-Alive TCP
+			handler = threading.Thread(target = ServSer.HandleTCPslave,args = (clientfd, cliaddr))
+			SlaveThreads.append(handler)
+			handler.start()
+	except KeyboardInterrupt:
+		print("\n[-] Server close...")
+	
+	TCPsockfd.close()
+	for st in SlaveThreads:
+		st.join()
+if __name__ == "__main__":
+	main()

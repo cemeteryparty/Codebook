@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+
+from socket import *
+from select import select
+import sys, json
+
+class ServerService(object):
+	# receiver as server
+	def __init__(self, HostName, ListenPort):
+		self.HostName = HostName
+		self.ListenPort = ListenPort
+	def CreateSockfd(self):
+		# create UDP socket
+		try:
+			self.UDPsockfd = socket(AF_INET, SOCK_DGRAM)
+			self.UDPsockfd.bind((self.HostName, self.ListenPort))
+		except Exception as err:
+			print(f"[x] E: {err}")
+			exit(-1)
+		print(f"[*] Receiver listening on {self.HostName}:{self.ListenPort}")
+	def UDPreceiver(self, SvFPath):
+		sockfd, block = self.UDPsockfd, 0
+		datagram, peeraddr = sockfd.recvfrom(1024)
+		if datagram:
+			print(f"[+] Get connection from {peeraddr[0]}:{peeraddr[1]}")
+		try:
+			ffd = open(SvFPath, "wb")
+		except Exception as err:
+			print(f"E: {err}")
+			self.Close()
+			exit(-1)
+		"""
+		# select method
+		while True:
+			rdlist, wrlist, exlist = select([sockfd], [], [], 3)
+			if rdlist:
+				datagram, peeraddr = sockfd.recvfrom(1024)
+				print(f" Receive {len(datagram)} bytes, #{block} of file.")
+				block += 1
+				ffd.write(datagram)
+			else:
+				print("Finish write file.")
+				break
+		"""
+		while True:
+			try:
+				sockfd.settimeout(2)
+				datagram, peeraddr = sockfd.recvfrom(1024)
+				print(f" Receive {len(datagram)} bytes, #{block} of file.")
+				block += 1
+				ffd.write(datagram)
+			except timeout:
+				print("Finish write file.")
+				break
+		ffd.close()
+	def Close(self):
+		self.UDPsockfd.close()
+def main():
+	if len(sys.argv) != 3:
+		print(f"Usage:\n {sys.argv[0]} <Listen Port> <SaveFilePath>")
+		exit(-1)
+	try:
+		HostName, ListenPort, SaveFilePath = "0.0.0.0", int(sys.argv[1]), sys.argv[2]
+	except ValueError:
+		print(f"E: {ListenPort} isn't a valid Listen Port ")
+		exit(-1)
+	ServSer = ServerService(HostName, ListenPort)
+	ServSer.CreateSockfd() # create UDP socket
+
+	ServSer.UDPreceiver(SaveFilePath)
+
+	ServSer.Close()
+if __name__ == "__main__":
+	main()
