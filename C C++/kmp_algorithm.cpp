@@ -1,42 +1,36 @@
 #include <iostream>
 
-int kmp_method(std::string pat,std::string tar){
-	int failure[pat.length()];
-	for(int i = 1,j = failure[0] = -1;i < pat.length();i++){
-		while(j >= 0 && pat[j + 1] != pat[i])
-			j = failure[j];
-			if(pat[j + 1] == pat[i]) 
-				j++;
-			failure[i] = j;
-	}
-	    /*
-	    printf("Failure Function:\n");
-	    for(int i = 0;i < pat.length();i++)
-	    	printf("%d ",failure[i]);
-	    printf("\n");
-	    */
-	int posP = 0,posT = 0;
-	while(posP < pat.length() && posT < tar.length()){
-		if(pat[posP] == tar[posT]){
-			posT++;
-			posP++;
-		}
-		else{
-			if(!posP)
-				posT++;
-			else
-				posP = failure[posP - 1] + 1;
-		}
-	}
-	return (posP < pat.length())?-1:posT - pat.length();
-}
-int main(int argc, char *argv[]){
-	//std::ios::sync_with_stdio(false);
-    //std::cin.tie(0);
-	std::string pat,str;
-	while(std::cin >> pat >> str){
-		int pos = kmp_method(pat,str);
-	    printf((pos > 0)?"%d\n":"Not Exist\n",pos);
-	}
-	return 0;
+using namespace std;
+class KMP {
+public:
+    int vaild(string &s, string &p){
+        int *failure = new int[p.length()]{0}, i, j = 0;
+        for (i = 1; i < p.length(); i++){
+            if (p[j] == p[i]) { failure[i] = (++j); }
+            else { failure[i] = 0; }
+        }
+        i = j = 0;
+        while (i < s.length() && j < p.length()) {
+            if (s[i] == p[j]) {
+                i++, j++;
+            }
+            else {
+                if (j) { j = failure[j - 1]; }
+                else { i++; }
+            }
+        }
+        delete [] failure; 
+        // return j == p.length();
+        return j < p.length()? -1: i - p.length();
+    }
+};
+
+int main(int argc, short const *argv[]){
+    string target, pattern;
+    KMP k;
+    while (cin >> target >> pattern) {
+        int pos = k.valid(target, pattern);
+        printf((pos > 0)? "%d\n": "Not Exist\n", pos);
+    }
+    return 0;
 }
